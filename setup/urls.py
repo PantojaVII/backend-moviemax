@@ -1,22 +1,29 @@
-"""
-URL configuration for setup project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from companies.views import CompanieViewSet
+from movies.views import MovieViewSet
+from series.views import SerieViewSet
+from likes.views import LikesViewSet
+from accounts.views import CreateUserView2, CustomAuthTokenViewSet
+from django.conf.urls.static import static
+from django.conf import settings
+from rest_framework import routers
+
+"""routers do Django REST framework, que fornece funcionalidades para criar automaticamente URLs para as 
+visualizações do modelo."""
+
+router = routers.DefaultRouter()
+"""router = routers.DefaultRouter(): Criando uma instância do DefaultRouter. O DefaultRouter é um roteador que ajuda 
+a gerar URLs automaticamente para as visualizações do modelo registradas. Você pode usá-lo para configurar URLs para 
+operações CRUD em seus modelos, como listar, criar, atualizar e excluir registros."""
+router.register('Companies', CompanieViewSet, basename='Companies')
+router.register('Movies', MovieViewSet, basename='Movies')
+router.register('Series', SerieViewSet, basename='Series')
+router.register('Likes', LikesViewSet, basename='Likes')
+router.register('Accounts', CreateUserView2, basename='Accounts')
+router.register('login', CustomAuthTokenViewSet, basename='login')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-]
+    path('', include(router.urls)),
+]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
