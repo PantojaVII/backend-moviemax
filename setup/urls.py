@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from companies.views import CompanieViewSet
-from movies.views import MovieViewSet
+from movies.views import MovieViewSet, movie_stream
 from series.views import SerieViewSet
 from likes.views import LikesViewSet
 from accounts.views import CreateUserView2, CustomAuthTokenViewSet
@@ -26,4 +26,5 @@ router.register('login', CustomAuthTokenViewSet, basename='login')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
+    path('movies/<int:movie_id>/stream/', movie_stream, name='movie_stream'),
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

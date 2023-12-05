@@ -46,6 +46,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
+
+
 ]
 
 ROOT_URLCONF = 'setup.urls'
@@ -134,3 +136,4 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # URL base para servir arquivos de mídia
 MEDIA_URL = "/media/"
+TIMEOUT = 10000

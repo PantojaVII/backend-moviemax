@@ -46,7 +46,12 @@ class Movie(models.Model):
     coverTwo = models.FileField(upload_to=movie_upload_path)
     highlight = models.FileField(upload_to=movie_upload_path)
     player = models.FileField(upload_to=movie_upload_path)
+    file_size = models.PositiveIntegerField(null=True, blank=True, editable=False,default=0)
     def save(self, *args, **kwargs):
+
+        if self.player:
+            # Calcula o tamanho do arquivo em bytes
+            self.file_size = self.player.size
         # Se o objeto ainda não tem um ID, isso significa que é um novo objeto
         if not self.id:
             last_movie = Movie.objects.order_by('-id').first()
