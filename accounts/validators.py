@@ -1,4 +1,5 @@
 # validators.py
+import re  # Adicione esta linha para importar o módulo re
 from django.core.exceptions import ValidationError
 from .backends.backends import EmailBackend
 from django.contrib.auth.models import User
@@ -11,8 +12,10 @@ def validate_login_credentials(request, email, password):
 
 
 def validate_lowercase_username(value):
-    if not value.islower():
-        raise ValidationError("O nome de usuário deve estar em minúsculas.")
+    if not re.match(r'^[a-zA-Z0-9@/./+/-/_/~ ]*$', value):
+        raise ValidationError(
+            "Informe um nome de usuário válido. Este valor pode conter letras maiúsculas, minúsculas, números, espaços e os seguintes caracteres especiais: @/./+/-/_."
+        )
 
 
 def validate_unique_email(email):
