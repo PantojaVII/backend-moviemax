@@ -12,16 +12,8 @@ groups = (
     (3, '+12'),
     (4, '+16'),
     (5, '+18'),
-)
-groups_Info = (
-    (1, 'HD'),
-    (2, 'FullHd'),
-    (3, 'Heróis'),
-    (4, 'Marvel'),
-    (5, 'DC'),
-    (6, 'FILME'),
-    (7, 'SERIE'),
-)
+);
+
 
 def movie_upload_path(instance, filename):
     # instance.id ainda não foi definido, usando UUID temporário
@@ -39,6 +31,7 @@ class Movie(models.Model):
     director = models.CharField(max_length=100)
     genres = models.ManyToManyField(Genre)
     info = models.ManyToManyField(Info)
+    rating = models.CharField(max_length=3, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     age_groups = models.IntegerField(choices=groups, default=1)
     updated_at = models.DateTimeField(auto_now=True)

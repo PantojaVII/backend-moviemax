@@ -1,19 +1,23 @@
 from django.contrib import admin
-from .models import Serie, Season, Episode
+from .models import Serie, Season, Episode, Info
 
 # Define um método para exibir os gêneros
 def Genres_Series(obj):
     genres = [str(genre) for genre in obj.genres.all()]  # Converta os valores inteiros em strings
     return ", ".join(genres)
 
+def Info_Series(obj):
+    info_list = [str(info) for info in obj.info.all()]
+    return ", ".join(info_list)
+
 
 # Define a classe de administração para o modelo Serie
 @admin.register(Serie)
 class SerieAdmin(admin.ModelAdmin):
-    list_display = ('name', 'release_date', 'director', Genres_Series)
+    list_display = ('name', 'release_date', 'director', Genres_Series, Info_Series)
     list_filter = ('genres',)  # Adicione um filtro para gêneros
     search_fields = ('name', 'director')  # Adicione campos de pesquisa
-    filter_horizontal = ('genres',)  # Use uma interface de seleção para gêneros
+    filter_horizontal = ('genres', 'info')  # Use uma interface de seleção para gêneros e info
 
 # Define a classe de administração para o modelo Season
 @admin.register(Season)
