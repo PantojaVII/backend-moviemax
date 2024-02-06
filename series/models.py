@@ -3,6 +3,7 @@ from django.db import models
 from genres.models import Genre, Info
 from companies.models import Companie
 from django.conf import settings
+from utils.common import generate_hash
 
 groups = (
     (1, 'LIVRE'),
@@ -18,6 +19,7 @@ def episode_upload_path(instance, filename):
 
 class Serie(models.Model):
     id = models.AutoField(primary_key=True)
+    hashed_id = models.CharField(max_length=64, blank=True, null=True, unique=True)
     name = models.CharField(max_length=100)
     synopsis = models.TextField()
     release_date = models.DateField()
@@ -35,6 +37,8 @@ class Serie(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        if not self.hashed_id:
+            self.hashed_id = generate_hash()
         # Se o objeto ainda não tem um ID, isso significa que é um novo objeto
         if not self.id:
             last_serie = Serie.objects.order_by('-id').first()
@@ -47,6 +51,7 @@ class Serie(models.Model):
         return f'{self.name} - {self.release_date}'
 class Season(models.Model):
     serie = models.ForeignKey(Serie, on_delete=models.CASCADE)   
+    hashed_id = models.CharField(max_length=64, blank=True, null=True, unique=True)
     season = models.PositiveSmallIntegerField()  # temporada   
     synopsis = models.TextField()
     release_date = models.DateField()  # Data de lançamento da temporada
@@ -57,6 +62,8 @@ class Season(models.Model):
         return f"{self.serie} - Temporada {self.season}"
 
     def save(self, *args, **kwargs):
+        if not self.hashed_id:
+            self.hashed_id = generate_hash()
         super().save(*args, **kwargs)
         media_root = settings.MEDIA_ROOT
         # Crie o diretório da temporada
@@ -66,9 +73,9 @@ class Season(models.Model):
             print(f"Diretório criado com sucesso: {season_folder}")
         except Exception as e:
             print(f"Erro ao criar o diretório: {e}")
-
 class Episode(models.Model):
-    season = models.ForeignKey(Season, on_delete=models.CASCADE, related_name='episodes')  
+    season = models.ForeignKey(Season, on_delete=models.CASCADE, related_name='episodes')
+    hashed_id = models.CharField(max_length=64, blank=True, null=True, unique=True)  
     num_episode  = models.PositiveSmallIntegerField()  # numero episode   
     name = models.CharField(max_length=100)  # Nome do episódio
     duration = models.DurationField()  # Duração do episódio
@@ -81,7 +88,8 @@ class Episode(models.Model):
         return f"{self.season} - Episódio {self.name}"
 
     def save(self, *args, **kwargs):
-        
+        if not self.hashed_id:
+            self.hashed_id = generate_hash()
         if self.player:
             # Calcula o tamanho do arquivo em bytes
             self.file_size = self.player.size

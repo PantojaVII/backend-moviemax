@@ -46,9 +46,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
-
-
+    'setup.middleware.PrintMiddleware'
 ]
 
 ROOT_URLCONF = 'setup.urls'
@@ -138,3 +136,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # URL base para servir arquivos de mídia
 MEDIA_URL = "/media/"
 TIMEOUT = 10000
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 25
+    
+}

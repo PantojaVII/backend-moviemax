@@ -3,6 +3,7 @@ from genres.models import Genre
 from .models import Serie, Season, Episode
 
 class EpisodeSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(source='hashed_id')
     class Meta:
         model = Episode
         fields = (
@@ -18,11 +19,9 @@ class SeasonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Season
         fields = (
-
             'season',
             'synopsis',
             'episodes',
- 
         )
 
 class SerieSerializer(serializers.ModelSerializer):
@@ -30,10 +29,11 @@ class SerieSerializer(serializers.ModelSerializer):
     season_set = SeasonSerializer(many=True, read_only=True)
     age_groups = serializers.SerializerMethodField()
     info = serializers.SerializerMethodField()
-
+    id = serializers.CharField(source='hashed_id')
+    
     class Meta:
         model = Serie
-        exclude = ['company']
+        exclude = ['company', 'hashed_id']
 
     def get_genres(self, obj):
         #o get_name_display é o retorno do que foi definido no model

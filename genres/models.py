@@ -1,4 +1,6 @@
 from django.db import models
+from utils.common import generate_hash
+ 
 
 # Modelo para as categorias dos filmes
 class Genre(models.Model):
@@ -24,10 +26,17 @@ class Genre(models.Model):
         (18, 'Terror'),
     )
     name = models.PositiveSmallIntegerField(choices=GENRE_CHOICES, default=1, unique=True)
+    hashed_id = models.CharField(max_length=64, blank=True, null=True, unique=True)
+    def save(self, *args, **kwargs):
+        if not self.hashed_id:
+            self.hashed_id = generate_hash()
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return dict(self.GENRE_CHOICES)[self.name]
-
+    
+ 
 
 class Info(models.Model):
     groups_Info  = (
@@ -40,6 +49,12 @@ class Info(models.Model):
         (7, 'FullHd'),
     )
     name = models.PositiveSmallIntegerField(choices=groups_Info, default=1, unique=True)
+    hashed_id = models.CharField(max_length=64, blank=True, null=True, unique=True)
+    def save(self, *args, **kwargs):
+        if not self.hashed_id:
+            self.hashed_id = generate_hash()
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return dict(self.groups_Info)[self.name]

@@ -13,6 +13,8 @@ class MoviesSerializer(serializers.ModelSerializer):
     #genres = serializers.SerializerMethodField() em um serializador do Django REST Framework
     # indica que você está criando um campo personalizado chamado genres,
     # e você fornecerá a lógica para obter os dados desse campo por meio de um método chamado get_genres
+    id = serializers.CharField(source='hashed_id')
+
     genres = serializers.SerializerMethodField()
     # para achar o modelo, o nome precisa ser igual ao da representação do
     # model no caso o 'genres'
@@ -27,7 +29,7 @@ class MoviesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Movie
-        exclude = ['company']
+        exclude = ['company','hashed_id']
 
     def get_genres(self, obj):
         #o get_name_display é o retorno do que foi definido no model

@@ -23,3 +23,21 @@ class Search(generics.ListAPIView):
             return search_results
         else:
             return false
+
+class SearchGenre(generics.ListAPIView):
+    serializer_class = SerieSerializer  # Você pode ajustar isso conforme necessário
+
+    def get_queryset(self):
+        genre = self.request.GET.get('genre')  # Adicione a obtenção do parâmetro 'genre'
+        
+        if genre:
+            # Consulta tanto filmes quanto séries com base no gênero
+            movies_query = Movie.objects.filter(genres__id=genre)
+            series_query = Serie.objects.filter(genres__id=genre)
+
+            # Combine os resultados em uma lista
+            search_results = list(movies_query) + list(series_query)
+
+            return search_results
+        else:
+            return []

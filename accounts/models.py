@@ -1,24 +1,10 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import User
 from django.db import models
 
-class CustomUser(AbstractUser):
-    nameUser = models.CharField(max_length=255)
-    
-    # Provide unique related_name for groups and user_permissions
-    groups = models.ManyToManyField(
-        'auth.Group',
-        related_name='customuser_set',
-        related_query_name='user',
-        blank=True,
-        verbose_name='groups',
-        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
-    )
 
-    user_permissions = models.ManyToManyField(
-        'auth.Permission',
-        related_name='customuser_set',
-        related_query_name='user',
-        blank=True,
-        verbose_name='user permissions',
-        help_text='Specific permissions for this user.',
-    )
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    date_block = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f'Usuário válido até {self.date_block}'

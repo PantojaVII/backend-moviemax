@@ -3,12 +3,20 @@ import re  # Adicione esta linha para importar o módulo re
 from django.core.exceptions import ValidationError
 from .backends.backends import EmailBackend
 from django.contrib.auth.models import User
+from utils.common import validate_date
+
 
 
 def validate_login_credentials(request, email, password):
     user = EmailBackend().authenticate(request, email=email, password=password)
     if not user:
         raise ValidationError("Credenciais inválidas. Por favor, verifique o email e a senha.")
+    response = validate_date(user)
+    if response:
+        raise ValidationError("Erro de acesso, conta atrasada, entre em contato com seu provedor")
+    if not user.is_active:
+        raise ValidationError("Usuário inativo. Entre em contato com o suporte.")
+    
 
 
 def validate_lowercase_username(value):

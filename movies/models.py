@@ -1,9 +1,8 @@
 import os
 from django.db import models
 from genres.models import Genre, Info
-import hashlib
 from django.db import models
-from django.conf import settings
+from utils.common import generate_hash
 
 
 groups = (
@@ -20,8 +19,10 @@ def movie_upload_path(instance, filename):
     return f'movies/{instance.id}/{filename}'
 
 
+
 class Movie(models.Model):
     id = models.AutoField(primary_key=True)
+    hashed_id = models.CharField(max_length=64, blank=True, null=True, unique=True)
     name = models.CharField(max_length=100)
     synopsis = models.TextField()
     duration = models.DurationField()
@@ -41,7 +42,8 @@ class Movie(models.Model):
     player = models.FileField(upload_to=movie_upload_path)
     file_size = models.PositiveIntegerField(null=True, blank=True, editable=False,default=0)
     def save(self, *args, **kwargs):
-
+        if not self.hashed_id:
+            self.hashed_id = generate_hash()
         if self.player:
             # Calcula o tamanho do arquivo em bytes
             self.file_size = self.player.size
