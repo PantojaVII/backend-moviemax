@@ -12,6 +12,7 @@ class EpisodeSerializer(serializers.ModelSerializer):
             'name',
             'duration',
             'player',
+            'playerURL',
             'file_size'
         )
 class SeasonSerializer(serializers.ModelSerializer):

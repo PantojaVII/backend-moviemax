@@ -26,17 +26,27 @@ class MovieAdmin(admin.ModelAdmin):
         return '-'
 
     display_player.short_description = 'Player'
-
-    def delete_selected(modeladmin, request, queryset):
-        # Implemente a lógica de exclusão aqui
-        # Certifique-se de tratar erros e exibir mensagens de sucesso
-
-        # Exemplo básico:
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        # Remover a ação padrão de exclusão em massa
+        if 'delete_selected' in actions:
+            del actions['delete_selected']
+        return actions
+    actions = ['delete_selected_with_custom_logic']
+    def delete_selected_with_custom_logic(self, request, queryset):
+        """
+        Método para exclusão em massa das temporadas selecionados, com lógica personalizada.
+        """
         try:
-            count = queryset.count()
-            queryset.delete()
-            messages.success(request, f'{count} filmes foram excluídos com sucesso.')
+            for movie in queryset:
+                # Chamando o método delete personalizado do modelo
+                movie.delete()
         except Exception as e:
-            messages.error(request, f'Ocorreu um erro ao excluir os filmes: {str(e)}')
+            print(f"Erro ao enviar a solicitação DELETE: {e}")
 
-    delete_selected.short_description = 'Excluir filmes selecionados'
+        # Exclui os episódios selecionados em massa no banco de dados
+        queryset.delete()
+        # Mensagem de sucesso
+        self.message_user(request, "Episódios selecionados foram excluídos com sucesso.")
+    # Definição do nome da ação para aparecer no Admin
+    delete_selected_with_custom_logic.short_description = "Excluir selecionados"

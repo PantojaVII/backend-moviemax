@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from django.http import JsonResponse
 from django.http import StreamingHttpResponse
 from django.http import HttpResponse, HttpResponseBadRequest
 import re
@@ -63,58 +64,53 @@ class SerieViewSet(viewsets.ModelViewSet):
 
 @api_view(['GET'])
 def episode_stream(request, episode):
-    # Obtenha o objeto Episode com base no episode_id (substitua isso com sua própria lógica)
+
     episode = get_object_or_404(Episode, hashed_id=episode)
-    # Caminho para o arquivo de vídeo no sistema de arquivos
-    video_path = episode.player.path
+    video_size = episode.file_size
+    # Calculando a duração total do vídeo em segundos
+    duration_in_seconds = episode.duration.total_seconds()
 
-    # Abra o arquivo de vídeo
-    with open(video_path, 'rb') as video_file:
-        video_size = episode.file_size
-        response = HttpResponse()
-        response['Content-Type'] = 'video/mp4'
+    # Calculando bytes por segundo
+    bytes_per_second = video_size / duration_in_seconds
 
-        # Verifique se o cabeçalho 'Range' está presente na solicitação
-        if 'Range' in request.headers:
-            # Se o cabeçalho 'Range' estiver presente, transmita apenas a parte solicitada do vídeo
-            range_header = request.headers['Range']
-            start, end = process_range_header(range_header, video_size)
+    # Calculando o intervalo desejado em bytes para 30 segundos
+    interval_bytes = int(bytes_per_second) * 120
 
-            # Configurar os cabeçalhos para transmitir apenas a parte solicitada
-            response['Content-Range'] = f'bytes {start}-{end}/{video_size}'
-            response['Content-Length'] = end - start + 1
-            response.status_code = 206  # Código de status parcial
+    # Obtendo o caminho do vídeo do objeto Movie, ou definindo como None se não houver
+    video_path = episode.player.path if episode.player else None
 
-            # Lógica para posicionar o cursor no arquivo e enviar a parte correta do vídeo
-            video_file.seek(start)
-            response.write(video_file.read(end - start + 1))
+    # Obtendo o caminho do vídeo do objeto Movie, ou definindo como None se não houver
+    video_url = episode.playerURL if episode.playerURL else None
 
-        else:
-            # Se o cabeçalho 'Range' não estiver presente, transmita o vídeo completo
-            video_file = File(video_file)
-            response['Content-Disposition'] = 'inline; filename=' + os.path.basename(video_path)
-            response['Content-Length'] = video_size
-            response.write(video_file.read())
+    if video_url:
+        return JsonResponse({'MESSAGE': 'EXTERNAL URL'})
 
-    return response
+    # Verificando se o cabeçalho Range está presente na requisição
+    if 'Range' in request.headers:
+        range_header = request.headers['Range']
+        # O cabeçalho Range tem o formato 'bytes=start-end'
+        # Aqui vamos dividir o cabeçalho e pegar o valor de start
+        start_byte = int(range_header.split('=')[1].split('-')[0])
+        # Definindo o fim do intervalo como start_byte + interval_bytes
+        end_byte = min(start_byte + interval_bytes, video_size - 1)  # Certifique-se de não ultrapassar o tamanho do arquivo
 
-def process_range_header(range_header, video_size):
-    # Verifique se o cabeçalho 'Range' está vazio ou não está no formato esperado
-    if not range_header or '=' not in range_header:
-        # Se estiver vazio ou não no formato esperado, retorne o range completo
-        return 0, video_size - 1
+        # Lendo apenas a parte do vídeo especificada pelo intervalo
+        with open(video_path, 'rb') as video_file:
+            video_file.seek(start_byte)
+            video_data = video_file.read(end_byte - start_byte + 1)
 
-    try:
-        # Tente analisar os valores do cabeçalho 'Range'
-        start, end = map(int, range_header.split('=')[1].split('-'))
+        # Retornando a parte do vídeo como resposta
+        response = HttpResponse(video_data, content_type='video/mp4')
+        response['Content-Length'] = len(video_data)
+        response['Content-Range'] = f'bytes {start_byte}-{end_byte}/{video_size}'
+        response.status_code = 206  # Status de resposta parcial
 
-        # Certifique-se de que os valores estejam dentro dos limites do arquivo de vídeo
-        start = min(max(0, start), video_size - 1)
-        end = min(end, video_size - 1)
+        return response
 
-        return start, end
-    except ValueError:
-        # Se ocorrer um erro ao converter para int, retorne o range completo
-        return 0, video_size - 1
+    else:
+        # Se não houver cabeçalho Range na requisição, retorna o arquivo de vídeo completo
+        return FileResponse(open(video_path, 'rb'), content_type='video/mp4')
+
+
     
 

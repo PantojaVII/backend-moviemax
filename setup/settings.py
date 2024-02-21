@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'series',
     'genres',
     'search',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -127,14 +128,46 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://192.168.0.113:3000",
 ]
+
+# AWS CONFIGURATE
+
+AWS_ACCESS_KEY_ID = "AKIAZI2LFHZ4XBA5B4NK"
+
+AWS_SECRET_ACCESS_KEY = "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"
+
+AWS_STORAGE_BUCKET_NAME = "coliseu-bucket-bitware"
+
+AWS_S3_CUSTOM_DOMAIN = F'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+
+AWS_DEFAULT_ACL = 'public-read'
+
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400'
+}
+
+
+AWS_QUERYSTRING_AUTH = False
+
+AWS_HEADERS = {
+    'Access-Control-Allow-Origin': '*',
+}
+
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+
+
+
+
 # URL base para servir arquivos estáticos
-STATIC_URL = 'static/'
+STATIC_URL = f'static/'
+MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
+
 
 # Caminho absoluto para o diretório onde os arquivos de mídia serão armazenados
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # URL base para servir arquivos de mídia
-MEDIA_URL = "/media/"
+
 TIMEOUT = 10000
 
 REST_FRAMEWORK = {
@@ -142,3 +175,12 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 25
     
 }
+
+
+
+BASE_COLISEU = "http://192.168.0.110:8080/"
+BASE_MOVIES_ENDPOINT = f"{BASE_COLISEU}api/movies/"
+BASE_EPISODES_ENDPOINT = f"{BASE_COLISEU}api/episodes/"
+BASE_SEASON_DESTROY_ENDPOINT = f"{BASE_COLISEU}api/season-delete/"
+BASE_SERIES_DESTROY_ENDPOINT = f"{BASE_COLISEU}api/serie-delete/"
+
