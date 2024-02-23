@@ -6,9 +6,8 @@ from companies.models import Companie
 from django.conf import settings
 from utils.common import generate_hash
 import boto3
-endpoint_storage_episodes = settings.BASE_EPISODES_ENDPOINT
-endpoint_destroy_season = settings.BASE_SEASON_DESTROY_ENDPOINT
-endpoint_destroy_series = settings.BASE_SERIES_DESTROY_ENDPOINT
+from utils.common import delete_file_from_s3, delete_directory_from_s3
+
 
 groups = (
     (1, 'LIVRE'),
@@ -36,12 +35,17 @@ def movie_upload_path(instance, filename):
 
     # Retorna o caminho completo do arquivo com o novo nome
     return f'series/{instance.hashed_id}/{new_filename}'
+
 def episode_upload_path(instance, filename):
-    return f'series/{instance.season.serie.id}/Season {instance.season.season}/{filename}'
+        # instance.id ainda não foi definido, usando UUID temporário
+    instance.player_name = f'{filename}'
+    return f'series/{instance.season.serie.hashed_id}/{instance.season.hashed_id}/{instance.player_name}'
+
+""" ------------------------------------------------------------------------------ """
 
 class Serie(models.Model):
     id = models.AutoField(primary_key=True)
-    hashed_id = models.CharField(max_length=64, blank=True, null=True, unique=True)
+    hashed_id = models.CharField(max_length=15, blank=True, null=True, unique=True)
     name = models.CharField(max_length=100)
     synopsis = models.TextField()
     release_date = models.DateField()
@@ -57,6 +61,21 @@ class Serie(models.Model):
     highlight = models.FileField(upload_to=movie_upload_path, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.hashed_id:
+            self.hashed_id = generate_hash()
+        # Se o objeto ainda não tem um ID, isso significa que é um novo objeto
+        if not self.id:
+            last_serie = Serie.objects.order_by('-id').first()
+            last_id = last_serie.id if last_serie else 0
+            self.id = last_id + 1
+
+        # Chame o método save() da classe pai para realizar o salvamento real
+        super().save(*args, **kwargs)
+    def __str__(self):
+        return f'{self.name} - {self.release_date}'
+
     def delete(self, *args, **kwargs):
         # Obtém o caminho do diretório a ser excluído
         directory_path = f'series/{self.hashed_id}'
@@ -75,42 +94,22 @@ class Serie(models.Model):
                 print(f"Diretório {directory_path} não existe.")
         except Exception as e:
             print(f"Erro ao excluir o diretório local: {e}")
-        # Chama o método delete da classe pai para excluir o objeto Movie do banco de dados
+
+        """ Abaixo apagamos o diretório do S3 """
+        print(f'Diretório a ser excluido{directory_path}')
         try:
-            # Remove o diretório correspondente no Amazon S3
-            s3 = boto3.client('s3', aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                              aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY)
-            s3_bucket = settings.AWS_STORAGE_BUCKET_NAME
-            s3_directory = f"series/{self.hashed_id}/"
-            s3_objects = s3.list_objects_v2(Bucket=s3_bucket, Prefix=s3_directory)
-            if 'Contents' in s3_objects:
-                for obj in s3_objects['Contents']:
-                    s3.delete_object(Bucket=s3_bucket, Key=obj['Key'])
-                print(f"Diretório {s3_directory} excluído com sucesso do Amazon S3.")
-            else:
-                print(f"Diretório {s3_directory} não existe no Amazon S3.")
+            delete_directory_from_s3(directory_path);
         except Exception as e:
             print(f"Erro ao excluir o diretório do Amazon S3: {e}")
         super().delete(*args, **kwargs)
 
+    
+""" ------------------------------------------------------------------------------ """
 
 
-    def save(self, *args, **kwargs):
-        if not self.hashed_id:
-            self.hashed_id = generate_hash()
-        # Se o objeto ainda não tem um ID, isso significa que é um novo objeto
-        if not self.id:
-            last_serie = Serie.objects.order_by('-id').first()
-            last_id = last_serie.id if last_serie else 0
-            self.id = last_id + 1
-
-        # Chame o método save() da classe pai para realizar o salvamento real
-        super().save(*args, **kwargs)
-    def __str__(self):
-        return f'{self.name} - {self.release_date}'
 class Season(models.Model):
     serie = models.ForeignKey(Serie, on_delete=models.CASCADE)   
-    hashed_id = models.CharField(max_length=64, blank=True, null=True, unique=True)
+    hashed_id = models.CharField(max_length=15, blank=True, null=True, unique=True)
     season = models.PositiveSmallIntegerField()  # temporada   
     synopsis = models.TextField()
     release_date = models.DateField()  # Data de lançamento da temporada
@@ -120,13 +119,16 @@ class Season(models.Model):
     def __str__(self):
         return f"{self.serie} - Temporada {self.season}"
 
+
     def save(self, *args, **kwargs):
         if not self.hashed_id:
             self.hashed_id = generate_hash()
         super().save(*args, **kwargs)
+
+
     def delete(self, *args, **kwargs):
         # Obtém o caminho do diretório a ser excluído
-        directory_path = f'{self.serie.hashed_id}/season_{self.season}/'
+        directory_path = f'series/{self.serie.hashed_id}/{self.hashed_id}'
         print(f'Diretório a ser excluido{directory_path}')
         try:
             # Verifica se o diretório existe antes de tentar removê-lo
@@ -143,112 +145,66 @@ class Season(models.Model):
         except Exception as e:
             print(f"Erro ao excluir o diretório local: {e}")
         # Chama o método delete da classe pai para excluir o objeto Movie do banco de dados
+        """ Abaixo apagamos o diretório do S3 """
+        print(f'Diretório a ser excluido{directory_path}')
         try:
-            # Remove o diretório correspondente no Amazon S3
-            s3 = boto3.client('s3', aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                              aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY)
-            s3_bucket = settings.AWS_STORAGE_BUCKET_NAME
-            s3_directory = f"movies/{self.id}/"
-            s3_objects = s3.list_objects_v2(Bucket=s3_bucket, Prefix=s3_directory)
-            if 'Contents' in s3_objects:
-                for obj in s3_objects['Contents']:
-                    s3.delete_object(Bucket=s3_bucket, Key=obj['Key'])
-                print(f"Diretório {s3_directory} excluído com sucesso do Amazon S3.")
-            else:
-                print(f"Diretório {s3_directory} não existe no Amazon S3.")
+            delete_directory_from_s3(directory_path);
         except Exception as e:
             print(f"Erro ao excluir o diretório do Amazon S3: {e}")
         super().delete(*args, **kwargs)
+
+""" ------------------------------------------------------------------------------ """
+
 class Episode(models.Model):
+
     season = models.ForeignKey(Season, on_delete=models.CASCADE, related_name='episodes')
-    hashed_id = models.CharField(max_length=64, blank=True, null=True, unique=True)  
+    hashed_id = models.CharField(max_length=15, blank=True, null=True, unique=True)  
     num_episode  = models.PositiveSmallIntegerField()  # numero episode   
     name = models.CharField(max_length=100)  # Nome do episódio
     duration = models.DurationField()  # Duração do episódio
     synopsis = models.TextField()
-    player = models.FileField(null=True, blank=True)
-    playerURL = models.URLField(default='', blank=True)
+    player = models.FileField(upload_to=episode_upload_path, null=True, blank=True)
+    player_name = models.CharField(max_length=100, default='', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)  # Data e hora de criação do registro
     updated_at = models.DateTimeField(auto_now=True)  # Data e hora da última atualização
     file_size = models.PositiveIntegerField(null=True, blank=True, editable=False,default=0)
     def __str__(self):
         return f"{self.season} - Episódio {self.name}"
 
-    def send_player_to_endpoint(self, endpoint):
-        try:
-
-            # Prepara os dados para a solicitação POST
-            data = {'queops_id_episode': self.hashed_id,
-                    'path': f'{self.season.serie.hashed_id}/season_{self.season.season}/'}
-            files = {'episode': self.player}
-
-            response = requests.post(endpoint, data=data, files=files)
-            if response.status_code == 200:
-                return response.json().get('path')
-
-        except Exception as e:
-            print(f"Erro ao enviar o player para o endpoint: {e}")
-
-
     def save(self, *args, **kwargs):
         # Se hashed_id não estiver definido, gera um hash e atribui
         if not self.hashed_id:
             self.hashed_id = generate_hash()
 
-
         # Se houver um arquivo de player associado
-        try:
-            if self.player:
-                # Calcula o tamanho do arquivo em bytes
-                self.file_size = self.player.size
-                old_episode = Episode.objects.get(id=self.id)
-                # Verifica se o arquivo do player é diferente do que está armazenado no banco de dados
-                if self.id and self.player.name != old_episode.player:
-                    # Envia o arquivo do player para o endpoint e atualiza o campo playerURL
-                    self.playerURL = self.send_player_to_endpoint(f"{endpoint_storage_episodes}"
-                                                                  f"{self.hashed_id}")
-                    self.player = self.player.name
-        except Episode.DoesNotExist:
-            self.playerURL = self.send_player_to_endpoint(f"{endpoint_storage_episodes}");
-            self.player = self.player.name
+        if self.player:
+            # Atualiza o tamanho do arquivo em bytes
+            self.file_size = self.player.size
 
-        # Chama o método save da classe pai
+            # Verifica se o novo player é diferente do player_name atual
+            if self.player.name != self.player_name:
+                file = f'series/{self.season.serie.hashed_id}/{self.season.hashed_id}/{self.player_name}'
+                # Deleta o player antigo se existir
+                if self.player_name:
+                    if delete_file_from_s3(file):
+                        print("Arquivo deletado com sucesso!")
+                    else:
+                        print("Falha ao deletar o arquivo.")
+                    
+
+                # Atualiza o player_name com o nome do novo player
+                self.player_name = self.player.name
+
         super().save(*args, **kwargs)
+
 
     def delete(self, *args, **kwargs):
         # Obtém o caminho do diretório a ser excluído
-        directory_path = f'{self.serie.hashed_id}/season_{self.season.season}/{self.player}'
-        print(f'Diretório a ser excluido{directory_path}')
+        file_path = f'series/{self.season.serie.hashed_id}/{self.season.hashed_id}/{self.player_name}'
+        print(f'Arquivo a ser excluido{file_path}')
         try:
-            # Verifica se o diretório existe antes de tentar removê-lo
-            if os.file.exists(directory_path):
-                # Remove o episode
-                os.remove(file_path)
-                print(f"episode {self.player} excluído com sucesso.")
-            else:
-                print(f"episode {self.player} não existe.")
+            delete_file_from_s3(file_path);
         except Exception as e:
-            print(f"Erro ao excluir o episode local: {e}")
-        # Chama o método delete da classe pai para excluir o objeto Movie do banco de dados
-        try:
-            # Remove o diretório correspondente no Amazon S3
-            s3 = boto3.client('s3', aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                              aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY)
-            s3_bucket = settings.AWS_STORAGE_BUCKET_NAME
-            s3_key = f'{self.serie.hashed_id}/season_{self.season.season}/{self.player}'
-
-            # Verifica se o objeto existe antes de tentar removê-lo
-            response = s3.list_objects_v2(Bucket=s3_bucket, Prefix=s3_key)
-            if 'Contents' in response:
-                # Remove o objeto (arquivo) do S3
-                s3.delete_object(Bucket=s3_bucket, Key=s3_key)
-                print(f"Arquivo {s3_key} excluído com sucesso do Amazon S3.")
-            else:
-                print(f"Arquivo {s3_key} não existe no Amazon S3.")
-
-        except Exception as e:
-            print(f"Erro ao excluir o arquivo do Amazon S3: {e}")
-
-        # Chama o método delete da classe pai para excluir o objeto do banco de dados
+            print(f"Erro ao excluir o diretório do Amazon S3: {e}")
         super().delete(*args, **kwargs)
 

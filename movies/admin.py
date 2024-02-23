@@ -47,6 +47,6 @@ class MovieAdmin(admin.ModelAdmin):
         # Exclui os episódios selecionados em massa no banco de dados
         queryset.delete()
         # Mensagem de sucesso
-        self.message_user(request, "Episódios selecionados foram excluídos com sucesso.")
+        self.message_user(request, "Filmes selecionados foram excluídos com sucesso.")
     # Definição do nome da ação para aparecer no Admin
     delete_selected_with_custom_logic.short_description = "Excluir selecionados"

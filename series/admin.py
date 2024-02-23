@@ -101,33 +101,21 @@ class EpisodeAdmin(admin.ModelAdmin):
             del actions['delete_selected']
         return actions
     actions = ['delete_selected_with_custom_logic']
-
     def delete_selected_with_custom_logic(self, request, queryset):
         """
-        Método para exclusão em massa dos episódios selecionados, com lógica personalizada.
+        Método para exclusão em massa das temporadas selecionados, com lógica personalizada.
         """
         try:
             for episode in queryset:
-                # URL do endpoint com o hashed_id substituído
-                url = f"{endpoint_storage_episodes}{episode.hashed_id}"
-                # Envia a solicitação DELETE
-                response = requests.delete(url)
-
-                # Verifica se a solicitação foi bem-sucedida (código de status 204)
-                if response.status_code == 204:
-                    print(f"Episódio {episode.name} excluído com sucesso.")
-                else:
-                    print(f"Falha ao excluir o episódio {episode.name}. Código de status: {response.status_code}")
-
+                # Chamando o método delete personalizado do modelo
+                episode.delete()
         except Exception as e:
             print(f"Erro ao enviar a solicitação DELETE: {e}")
 
         # Exclui os episódios selecionados em massa no banco de dados
         queryset.delete()
-
         # Mensagem de sucesso
-        self.message_user(request, "Episódios selecionados foram excluídos com sucesso.")
-
+        self.message_user(request, "Filmes selecionados foram excluídos com sucesso.")
     # Definição do nome da ação para aparecer no Admin
     delete_selected_with_custom_logic.short_description = "Excluir selecionados"
 
