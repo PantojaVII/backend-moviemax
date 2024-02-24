@@ -8,12 +8,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-&jib8rb=_bi@^y($k98-k+c(qnu7eil!-q^0+bq%(8-b*vae0&'
+SECRET_KEY = ''
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.0.113', 'localhost', ]
+ALLOWED_HOSTS = ['',]
 
 # Application definition
 
@@ -75,10 +75,15 @@ WSGI_APPLICATION = 'setup.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': '',
+        'NAME': '',
+        'USER': '',
+        'PASSWORD': '',
+        'HOST': '',
+        'PORT': '',
     }
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -125,8 +130,7 @@ REST_FRAMEWORK = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://192.168.0.113:3000",
+    "",
 ]
 
 
@@ -148,12 +152,3 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 25
     
 }
-
-
-
-BASE_COLISEU = "http://192.168.0.110:8080/"
-BASE_MOVIES_ENDPOINT = f"{BASE_COLISEU}api/movies/"
-BASE_EPISODES_ENDPOINT = f"{BASE_COLISEU}api/episodes/"
-BASE_SEASON_DESTROY_ENDPOINT = f"{BASE_COLISEU}api/season-delete/"
-BASE_SERIES_DESTROY_ENDPOINT = f"{BASE_COLISEU}api/serie-delete/"
-

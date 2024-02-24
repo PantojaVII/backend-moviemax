@@ -50,10 +50,10 @@ class R2FileManager:
     
     def get_r2_client(self):
         s3 = boto3.client(
-            service_name="s3",
-            endpoint_url='https://4e03f37d1ebccb35ec432e4e43dbf6d2.r2.cloudflarestorage.com',
-            aws_access_key_id='5fd6cbf715fae338f92cd4019a7a2547',
-            aws_secret_access_key='bd41b097841344469e1f63ed2486101a8698030bc307d0f12929941d18803bfd',
+            service_name="",
+            endpoint_url='',
+            aws_access_key_id='',
+            aws_secret_access_key='',
             region_name="auto",
         )
         return s3
@@ -62,7 +62,7 @@ class R2FileManager:
         try:
             self.s3_client.upload_fileobj(file, self.r2_bucket_name, path_to_file)
             print("Arquivo enviado com sucesso para o R2 da Cloudflare.")
-            return f"https://pub-ee768ce2925d4cb78296a4180f23461e.r2.dev/{path_to_file}"
+            return f"/{path_to_file}"
         except Exception as e:
             print(f"Erro ao enviar arquivo para o R2 da Cloudflare via S3: {e}")
     
