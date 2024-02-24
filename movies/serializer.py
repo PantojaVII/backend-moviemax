@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Movie
+import urllib.parse
 
 
 # Ao usar o atributo choices em um campo de modelo, como CharField ou IntegerField,
@@ -14,7 +15,7 @@ class MoviesSerializer(serializers.ModelSerializer):
     # indica que você está criando um campo personalizado chamado genres,
     # e você fornecerá a lógica para obter os dados desse campo por meio de um método chamado get_genres
     id = serializers.CharField(source='hashed_id')
-
+    player = serializers.SerializerMethodField()
     genres = serializers.SerializerMethodField()
     # para achar o modelo, o nome precisa ser igual ao da representação do
     # model no caso o 'genres'
@@ -25,7 +26,7 @@ class MoviesSerializer(serializers.ModelSerializer):
 
     info = serializers.SerializerMethodField()
 
-
+    
 
     class Meta:
         model = Movie
@@ -41,3 +42,19 @@ class MoviesSerializer(serializers.ModelSerializer):
 
     def get_age_groups(self, char):
         return char.get_age_groups_display()
+    
+    def get_player(self, obj):
+        if obj.player:
+            player_url = obj.player.url
+            # Encontrar a posição do primeiro "http" no URL
+            http_index = player_url.find('http')
+            if http_index != -1:
+                # Retorna a parte do URL após "http"
+                player_url = player_url[http_index:]
+                # Decodifica o URL
+                url_decoded = urllib.parse.unquote(player_url)
+                return url_decoded
+        return None
+
+    
+ 

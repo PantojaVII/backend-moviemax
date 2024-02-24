@@ -129,38 +129,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://192.168.0.113:3000",
 ]
 
-# AWS CONFIGURATE
-
-AWS_ACCESS_KEY_ID = "AKIAZI2LFHZ44LIO2YE3"
-
-AWS_SECRET_ACCESS_KEY = "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"
-
-AWS_STORAGE_BUCKET_NAME = "coliseu-bucket-bitware"
-
-AWS_S3_CUSTOM_DOMAIN = F'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
-
-AWS_DEFAULT_ACL = 'public-read'
-
-AWS_S3_OBJECT_PARAMETERS = {
-    'CacheControl': 'max-age=86400'
-}
-
-
-AWS_QUERYSTRING_AUTH = False
-
-AWS_HEADERS = {
-    'Access-Control-Allow-Origin': '*',
-}
-
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
-
-
 
 
 # URL base para servir arquivos estáticos
 STATIC_URL = f'static/'
-MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
+MEDIA_URL = f" media/"
 
 
 # Caminho absoluto para o diretório onde os arquivos de mídia serão armazenados

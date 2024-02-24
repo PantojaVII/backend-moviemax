@@ -14,6 +14,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='movie',
             name='player',
-            field=models.FileField(blank=True, null=True, upload_to=movies.models.player_upload_path),
+            field=models.FileField(blank=True, null=True),
         ),
     ]

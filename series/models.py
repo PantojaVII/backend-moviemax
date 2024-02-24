@@ -6,7 +6,7 @@ from companies.models import Companie
 from django.conf import settings
 from utils.common import generate_hash
 import boto3
-from utils.common import delete_file_from_s3, delete_directory_from_s3
+from utils.common import *
 
 
 groups = (
@@ -65,40 +65,20 @@ class Serie(models.Model):
     def save(self, *args, **kwargs):
         if not self.hashed_id:
             self.hashed_id = generate_hash()
-        # Se o objeto ainda não tem um ID, isso significa que é um novo objeto
-        if not self.id:
-            last_serie = Serie.objects.order_by('-id').first()
-            last_id = last_serie.id if last_serie else 0
-            self.id = last_id + 1
-
-        # Chame o método save() da classe pai para realizar o salvamento real
+        
         super().save(*args, **kwargs)
+
     def __str__(self):
-        return f'{self.name} - {self.release_date}'
+        return f'{self.name} '
 
     def delete(self, *args, **kwargs):
         # Obtém o caminho do diretório a ser excluído
         directory_path = f'series/{self.hashed_id}'
         print(f'Diretório a ser excluido{directory_path}')
         try:
-            # Verifica se o diretório existe antes de tentar removê-lo
-            if os.path.exists(directory_path):
-                # Remove todos os arquivos dentro do diretório
-                for filename in os.listdir(directory_path):
-                    file_path = os.path.join(directory_path, filename)
-                    os.remove(file_path)
-                # Remove o diretório vazio
-                os.rmdir(directory_path)
-                print(f"Diretório {directory_path} excluído com sucesso.")
-            else:
-                print(f"Diretório {directory_path} não existe.")
-        except Exception as e:
-            print(f"Erro ao excluir o diretório local: {e}")
-
-        """ Abaixo apagamos o diretório do S3 """
-        print(f'Diretório a ser excluido{directory_path}')
-        try:
-            delete_directory_from_s3(directory_path);
+            file_manager = R2FileManager()
+            file_manager.delete_directory(directory_path);
+            delete_directory_local(directory_path)
         except Exception as e:
             print(f"Erro ao excluir o diretório do Amazon S3: {e}")
         super().delete(*args, **kwargs)
@@ -129,28 +109,12 @@ class Season(models.Model):
     def delete(self, *args, **kwargs):
         # Obtém o caminho do diretório a ser excluído
         directory_path = f'series/{self.serie.hashed_id}/{self.hashed_id}'
-        print(f'Diretório a ser excluido{directory_path}')
+        print(f'Diretório a ser excluido: {directory_path}')
         try:
-            # Verifica se o diretório existe antes de tentar removê-lo
-            if os.path.exists(directory_path):
-                # Remove todos os arquivos dentro do diretório
-                for filename in os.listdir(directory_path):
-                    file_path = os.path.join(directory_path, filename)
-                    os.remove(file_path)
-                # Remove o diretório vazio
-                os.rmdir(directory_path)
-                print(f"Diretório {directory_path} excluído com sucesso.")
-            else:
-                print(f"Diretório {directory_path} não existe.")
+            file_manager = R2FileManager()
+            file_manager.delete_directory(directory_path);
         except Exception as e:
-            print(f"Erro ao excluir o diretório local: {e}")
-        # Chama o método delete da classe pai para excluir o objeto Movie do banco de dados
-        """ Abaixo apagamos o diretório do S3 """
-        print(f'Diretório a ser excluido{directory_path}')
-        try:
-            delete_directory_from_s3(directory_path);
-        except Exception as e:
-            print(f"Erro ao excluir o diretório do Amazon S3: {e}")
+            """ print(f"Erro ao excluir o diretório do Amazon S3: {e}") """
         super().delete(*args, **kwargs)
 
 """ ------------------------------------------------------------------------------ """
@@ -172,39 +136,40 @@ class Episode(models.Model):
         return f"{self.season} - Episódio {self.name}"
 
     def save(self, *args, **kwargs):
-        # Se hashed_id não estiver definido, gera um hash e atribui
-        if not self.hashed_id:
+        episode = Episode.objects.filter(id=self.id).first()
+        
+        if episode is None:
             self.hashed_id = generate_hash()
-
-        # Se houver um arquivo de player associado
-        if self.player:
-            # Atualiza o tamanho do arquivo em bytes
-            self.file_size = self.player.size
-
-            # Verifica se o novo player é diferente do player_name atual
-            if self.player.name != self.player_name:
-                file = f'series/{self.season.serie.hashed_id}/{self.season.hashed_id}/{self.player_name}'
-                # Deleta o player antigo se existir
-                if self.player_name:
-                    if delete_file_from_s3(file):
-                        print("Arquivo deletado com sucesso!")
-                    else:
-                        print("Falha ao deletar o arquivo.")
-                    
-
-                # Atualiza o player_name com o nome do novo player
+            if self.player:
                 self.player_name = self.player.name
-
+                self.file_size = self.player.size
+                file_manager = R2FileManager()
+                self.player = file_manager.upload_file(
+                    file=self.player.file, 
+                    path_to_file=f'series/{self.season.serie.hashed_id}/{self.season.hashed_id}/{self.player_name}'
+                    )
+        else:
+            if self.player:
+                file_manager = R2FileManager()
+                file_manager.delete_file(path_to_file=f'series/{self.season.serie.hashed_id}/{self.season.hashed_id}/{self.player_name}')
+                self.player_name = self.player.name
+                self.file_size = self.player.size
+                self.player = file_manager.upload_file(
+                    file=self.player.file, 
+                    path_to_file=f'series/{self.season.serie.hashed_id}/{self.season.hashed_id}/{self.player_name}'
+                    )
+                
         super().save(*args, **kwargs)
 
 
     def delete(self, *args, **kwargs):
         # Obtém o caminho do diretório a ser excluído
-        file_path = f'series/{self.season.serie.hashed_id}/{self.season.hashed_id}/{self.player_name}'
-        print(f'Arquivo a ser excluido{file_path}')
+        directory_path = f'series/{self.season.serie.hashed_id}/{self.season.hashed_id}/{self.player_name}'
+        print(f'Diretório a ser excluido {directory_path}')
         try:
-            delete_file_from_s3(file_path);
+            file_manager = R2FileManager()
+            file_manager.delete_directory(directory_path);
         except Exception as e:
-            print(f"Erro ao excluir o diretório do Amazon S3: {e}")
+            print(f"Erro ao excluir o diretório do cloudflare R2: {e}")
         super().delete(*args, **kwargs)
 
