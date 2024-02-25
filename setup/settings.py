@@ -1,19 +1,25 @@
 import os.path
 from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+DATA_DIR = BASE_DIR.parent / 'data' / 'web'
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = ''
+# Obter o valor da variável de ambiente SECRET_KEY
+SECRET_KEY = os.getenv('SECRET_KEY', '')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Obter o valor da variável de ambiente DEBUG
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['',]
+ALLOWED_HOSTS = [
+    h.strip() for h in os.getenv('ALLOWED_HOSTS', '').split(',')
+    if h.strip()
+]
 
 # Application definition
 
@@ -75,15 +81,10 @@ WSGI_APPLICATION = 'setup.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': '',
-        'NAME': '',
-        'USER': '',
-        'PASSWORD': '',
-        'HOST': '',
-        'PORT': '',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -114,12 +115,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # DRF
@@ -129,17 +124,17 @@ REST_FRAMEWORK = {
     ),
 }
 
+# Obter a lista de hosts permitidos da variável de ambiente ALLOWED_HOSTS
 CORS_ALLOWED_ORIGINS = [
-    "",
+    h.strip() for h in os.getenv('CORS_ALLOWED_ORIGINS', '').split(',')
+    if h.strip()
 ]
 
-
-
 # URL base para servir arquivos estáticos
-STATIC_URL = f'static/'
-MEDIA_URL = f" media/"
+STATIC_URL = f'/static/'
+MEDIA_URL = f"/media/"
 
-
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 # Caminho absoluto para o diretório onde os arquivos de mídia serão armazenados
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -150,5 +145,10 @@ TIMEOUT = 600000
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 25
-    
+
 }
+BASE_COLISEU = "http://192.168.0.110:8080/"
+BASE_MOVIES_ENDPOINT = f"{BASE_COLISEU}api/movies/"
+BASE_EPISODES_ENDPOINT = f"{BASE_COLISEU}api/episodes/"
+BASE_SEASON_DESTROY_ENDPOINT = f"{BASE_COLISEU}api/season-delete/"
+BASE_SERIES_DESTROY_ENDPOINT = f"{BASE_COLISEU}api/serie-delete/"
